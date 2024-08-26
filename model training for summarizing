@@ -1,44 +1,42 @@
-""" to Load and Tokenize """
-from transformers import BertTokenizer
+# Imports
+from transformers import BartTokenizer, BartForConditionalGeneration, Trainer, TrainingArguments
 from datasets import Dataset
 from sklearn.model_selection import train_test_split
 import pandas as pd
 
+""" to prepare data and Tokenize """
+# Load and prepare data
+def load_and_prepare_data(file_path):
+    # Load your data
+    data = pd.read_csv(file_path)
 
-# Load your data
-data = pd.read_csv('Stories_and_summary.csv')
+    # Split dataset into train and validation sets
+    def split_dataset(data, test_size=0.1):
+        train_data, val_data = train_test_split(data, test_size=test_size, stratify=data['label'])
+        return Dataset.from_pandas(train_data), Dataset.from_pandas(val_data)
 
-# Convert to Dataset
-dataset = Dataset.from_pandas(data)
+    train_dataset, val_dataset = split_dataset(data)
+    
+    return train_dataset, val_dataset
 
-def split_dataset(data, test_size=0.1):
-    train_data, val_data = train_test_split(data, test_size=test_size, stratify=data['label'])
-    return Dataset.from_pandas(train_data), Dataset.from_pandas(val_data)
-
-def tokenize_function(examples):
+def tokenize_function(examples):                                                          
     inputs = tokenizer(examples['text'], max_length=1024, truncation=True)
     targets = tokenizer(examples['summary'], max_length=150, truncation=True)
     inputs['labels'] = targets['input_ids']
     return inputs
 
 
-# Load tokenizer
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+tokenizer = BartTokenizer.from_pretrained('facebook/bart-large-cnn')                        # load tokenizer
+train_dataset, val_dataset = load_and_prepare_data('Stories_and_summary.csv')               # load data
 
-train_dataset, val_dataset = split_dataset(data)                # call split_dataset function and assign to train and val
-
-# Tokenize data
-tokenized_datasets = dataset.map(tokenize_function, batched=True)
+# Tokenize datasets
 tokenized_train = train_dataset.map(tokenize_function, batched=True)
 tokenized_val = val_dataset.map(tokenize_function, batched=True)
 
 
-""" to prepare Model and Training arguments """
-from transformers import BartTokenizer, BartForConditionalGeneration, Trainer, TrainingArguments
+""" define Model and Training args"""
 
-# Load tokenizer and model
-tokenizer = BartTokenizer.from_pretrained('facebook/bart-large-cnn')
-model = BartForConditionalGeneration.from_pretrained('facebook/bart-large-cnn')
+model = BartForConditionalGeneration.from_pretrained('facebook/bart-large-cnn')             # load model
 
 # Define training arguments
 training_args = TrainingArguments(
@@ -52,14 +50,17 @@ training_args = TrainingArguments(
 
 # Define Trainer
 trainer = Trainer(
-    model=model,
+    model=model,                                                                            # model loaded above
     args=training_args,
-    train_dataset=tokenized_train,
-    eval_dataset=tokenized_val                                         # validation set 
+    train_dataset=tokenized_train,                                                          # tokenized dataset, defined above
+    eval_dataset=tokenized_val                                                              # tokenized dataset, defined above
 )
 
 
-""" to train the model """
-trainer.train()                                                         # train the model
+""" train the model"""
 
-model.save_pretrained('./fine-tuned-bart')                              # save the model
+# Train the model
+trainer.train()
+
+# Save the model
+model.save_pretrained('./summary-trained-bart')                                             # can be used later 
