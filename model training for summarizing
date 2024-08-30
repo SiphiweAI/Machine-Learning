@@ -7,21 +7,20 @@ import pandas as pd
 """ to prepare data and Tokenize """
 # Load and prepare data
 def load_and_prepare_data(file_path):
-    # Load your data
-    data = pd.read_csv(file_path)
+    data = pd.read_csv(file_path)                                                   # load data
 
     # Split dataset into train and validation sets
     def split_dataset(data, test_size=0.1):
         train_data, val_data = train_test_split(data, test_size=test_size, stratify=data['label'])
         return Dataset.from_pandas(train_data), Dataset.from_pandas(val_data)
 
-    train_dataset, val_dataset = split_dataset(data)
+    train_dataset, val_dataset = split_dataset(data)                                        # assigns values to the two variables by calling the function passing 'data' as arg
     
     return train_dataset, val_dataset
 
 def tokenize_function(examples):                                                          
-    inputs = tokenizer(examples['text'], max_length=1024, truncation=True)
-    targets = tokenizer(examples['summary'], max_length=150, truncation=True)
+    inputs = tokenizer(examples['text'], max_length=1024, truncation=True, padding='max_length')
+    targets = tokenizer(examples['summary'], max_length=150, truncation=True, padding='max_length')
     inputs['labels'] = targets['input_ids']
     return inputs
 
@@ -46,6 +45,8 @@ training_args = TrainingArguments(
     per_device_eval_batch_size=4,
     num_train_epochs=3,
     weight_decay=0.01,
+    logging_dir='./logs',                                                                  # directory for storing logs
+    logging_steps=10,                                                                      # log every 10 steps
 )
 
 # Define Trainer
