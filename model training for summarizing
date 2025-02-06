@@ -13,7 +13,7 @@ def load_and_prepare_data(file_path):
         train_data, val_data = train_test_split(data, test_size=test_size, stratify=data['label'])
         return Dataset.from_pandas(train_data), Dataset.from_pandas(val_data)
 
-    train_dataset, val_dataset = split_dataset(data)  # assigns values to the two variables by calling the function passing 'data' as arg
+    train_dataset, val_dataset = split_dataset(data)
     
     return train_dataset, val_dataset
 
